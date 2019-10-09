@@ -1,3 +1,5 @@
+module function_factory.factory;
+
 import std.algorithm.iteration;
 import std.algorithm.mutation;
 import std.array;

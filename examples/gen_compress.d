@@ -1,6 +1,6 @@
 /// Compress positive numbers into the [0, 1) range.
 
-module examples.gen_compress;
+module function_factory.examples.gen_compress;
 
 import std.algorithm.searching;
 import std.math;
@@ -8,7 +8,7 @@ import std.random;
 import std.range;
 import std.stdio;
 
-import factory;
+import function_factory.factory;
 
 void main()
 {

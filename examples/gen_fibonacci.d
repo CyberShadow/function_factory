@@ -1,6 +1,6 @@
 /// Discover a function to generate the Fibonacci sequence.
 
-module examples.gen_fibonacci;
+module function_factory.examples.gen_fibonacci;
 
 import std.algorithm.searching;
 import std.math;
@@ -8,7 +8,7 @@ import std.random;
 import std.range;
 import std.stdio;
 
-import factory;
+import function_factory.factory;
 
 void main()
 {
