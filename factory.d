@@ -211,7 +211,7 @@ struct Program(alias params_)
 	{
 	retryProgram:
 		Program program;
-		program.numOps = 1 + uniform!size_t(rng) % params.maxInstructions;
+		program.numOps = 1 + uniform!uint(rng) % params.maxInstructions;
 		size_t[params.maxInstructions] orderBuf;
 		auto order = orderBuf[0 .. program.numOps];
 		copy(program.numOps.iota, order);
@@ -243,10 +243,10 @@ struct Program(alias params_)
 		static immutable Op[] pushers = [EnumMembers!Op].filter!(op => opShapes[op] == OpShape(0, 1)).array;
 		static assert(pushers.length > 0, "No push instructions (no constants/args/vars/locals)?");
 		{
-			auto p = uniform!size_t(rng) % order.length;
+			auto p = uniform!uint(rng) % order.length;
 			auto o = order[p];
 			order = order.remove!(SwapStrategy.unstable)(p);
-			addOp(o, pushers[uniform!size_t(rng) % $]);
+			addOp(o, pushers[uniform!uint(rng) % $]);
 		}
 
 		while (order.length)
@@ -254,7 +254,7 @@ struct Program(alias params_)
 			// Check sanity
 			assert(stackOK, "Bad stack generated");
 
-			auto o1 = cast(Op)(1 + uniform!size_t(rng) % (enumLength!Op - 1));
+			auto o1 = cast(Op)(1 + uniform!uint(rng) % (enumLength!Op - 1));
 			OpShape s1 = opShapes[o1];
 			if (s1.arg != s1.output)
 			{
@@ -272,7 +272,7 @@ struct Program(alias params_)
 					)
 					.array;
 
-				Op o2 = opsWithDelta[1 - s1.delta][uniform!size_t(rng) % $];
+				Op o2 = opsWithDelta[1 - s1.delta][uniform!uint(rng) % $];
 				OpShape s2 = opShapes[o2];
 				if (s1.delta < 0)
 				{
@@ -280,8 +280,8 @@ struct Program(alias params_)
 					swap(s1, s2);
 				}
 
-				auto p1 = uniform!size_t(rng) %  order.length     ;
-				auto p2 = uniform!size_t(rng) % (order.length - 1);
+				auto p1 = uniform!uint(rng) %  order.length     ;
+				auto p2 = uniform!uint(rng) % (order.length - 1);
 				if (p2 >= p1)
 					p2++;
 				addOp(order[p1], o1);
@@ -302,7 +302,7 @@ struct Program(alias params_)
 			else
 			{
 				// Wherever
-				auto p1 = uniform!size_t(rng) % order.length;
+				auto p1 = uniform!uint(rng) % order.length;
 				addOp(order[p1], o1);
 				if (stackOK)
 					order = order.remove(p1);
@@ -323,7 +323,7 @@ struct Program(alias params_)
 
 		static if (constants.length)
 			foreach (i; 0 .. params.numVars)
-				program.initInstance.vars[i] = constants[uniform!size_t(rng) % $];
+				program.initInstance.vars[i] = constants[uniform!uint(rng) % $];
 
 		return program;
 	}
