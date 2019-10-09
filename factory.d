@@ -67,7 +67,7 @@ struct Program(alias params_)
 		return s;
 	}());
 
-	struct OpShape { byte arg, output; byte delta() const { return cast(byte)(output - arg); } }
+	struct OpShape { byte input, output; byte delta() const { return cast(byte)(output - input); } }
 
 	static OpShape opShape(Op op)
 	{
@@ -235,7 +235,7 @@ struct Program(alias params_)
 			byte depth = 0;
 			foreach (op; program.ops[0 .. program.numOps])
 			{
-				depth -= opShapes[op].arg;
+				depth -= opShapes[op].input;
 				if (depth < 0)
 					return false;
 				depth += opShapes[op].output;
@@ -263,7 +263,7 @@ struct Program(alias params_)
 
 			auto o1 = cast(Op)(1 + uniform!uint(rng) % (enumLength!Op - 1));
 			OpShape s1 = opShapes[o1];
-			if (s1.arg != s1.output)
+			if (s1.input != s1.output)
 			{
 				// Balance it out
 
