@@ -1,5 +1,6 @@
 module function_factory.factory;
 
+import std.algorithm.comparison;
 import std.algorithm.iteration;
 import std.algorithm.mutation;
 import std.array;
@@ -42,6 +43,8 @@ struct Program(alias params_)
 			div,
 			mod,
 			pow,
+			min,
+			max_,
 		};
 
 		// Nonary (stack 0 => 1)
@@ -77,7 +80,9 @@ struct Program(alias params_)
 			case Op.mul:
 			case Op.div:
 			case Op.mod:
-			case Op.pow: return OpShape(2, 1);
+			case Op.pow:
+			case Op.min:
+			case Op.max_: return OpShape(2, 1);
 
 			static foreach (i; 0 .. constants.length)
 				mixin("case Op.pushConstant" ~ toDec(i) ~ ":");
@@ -155,6 +160,8 @@ struct Program(alias params_)
 				case Op.div: binary!"/"(); break;
 				case Op.mod: binary!"%"(); break;
 				case Op.pow: binary!"^^"(); break;
+				case Op.min: push(min(pop(), pop())); break;
+				case Op.max_:push(max(pop(), pop())); break;
 
 				static foreach (i; 0 .. constants.length)
 				{
@@ -378,6 +385,8 @@ struct Program(alias params_)
 				case Op.div: binary("/"); break;
 				case Op.mod: binary("%"); break;
 				case Op.pow: binary("^^"); break;
+				case Op.min: push("min(" ~ pop() ~ ", " ~ pop() ~ ")"); break;
+				case Op.max_:push("max(" ~ pop() ~ ", " ~ pop() ~ ")"); break;
 
 				static foreach (i; 0 .. constants.length)
 				{
