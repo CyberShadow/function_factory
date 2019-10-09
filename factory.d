@@ -321,6 +321,8 @@ struct Program(alias params_)
 					order = order.remove(p1);
 				else
 				{
+					if (order.length == 1)
+						goto retryProgram; // it is impossible to finish this program
 					program.ops[order[p1]] = Op.init;
 					goto retryOp;
 				}
