@@ -524,3 +524,42 @@ unittest
 		})(rng);
 	i = p.Instance(64); assert(p.eval(i) == 128);
 }
+
+Program!params generateFunctionMT(alias params, alias verifier, alias rndGenGen)()
+{
+	alias P = Program!params;
+	bool found;
+	P result;
+
+	import std.parallelism : totalCPUs, parallel;
+	foreach (thread; totalCPUs.iota.parallel(1))
+	{
+		auto rng = rndGenGen();
+		while (!found)
+		{
+			auto p = P.generate(rng);
+			if (verifier(p))
+			{
+				synchronized
+					if (!found)
+					{
+						result = p;
+						found = true;
+					}
+				break;
+			}
+		}
+	}
+
+	return result;
+}
+
+Program!params generateFunctionMT(alias params, alias verifier)()
+{
+	return generateFunctionMT!(params, verifier, () => Xorshift(unpredictableSeed));
+}
+
+unittest
+{
+	generateFunctionMT!(DefaultProgramParams, (ref p) => p.eval(1) == 2);
+}
