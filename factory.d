@@ -565,7 +565,7 @@ Program!params generateFunctionMT(alias params, alias verifier, alias rndGenGen)
 
 Program!params generateFunctionMT(alias params, alias verifier)()
 {
-	return generateFunctionMT!(params, verifier, () => Xorshift(unpredictableSeed));
+	return generateFunctionMT!(params, verifier, () => Random(unpredictableSeed));
 }
 
 unittest
