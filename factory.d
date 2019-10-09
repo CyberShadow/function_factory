@@ -261,23 +261,29 @@ struct Program(alias params_)
 			// Check sanity
 			assert(stackOK, "Bad stack generated");
 
-			auto o1 = cast(Op)(1 + uniform!uint(rng) % (enumLength!Op - 1));
+			enum minDelta = [EnumMembers!Op].map!(op => opShapes[op].delta).reduce!min;
+			enum maxDelta = [EnumMembers!Op].map!(op => opShapes[op].delta).reduce!max;
+			static immutable Op[][maxDelta - minDelta + 1] opsWithDelta =
+				iota(minDelta, maxDelta + 1)
+				.map!(delta =>
+					[EnumMembers!Op]
+					.filter!(op => op != Op.init && opShapes[op].delta == delta)
+					.array
+				)
+				.array;
+
+			Op o1;
+			if (order.length < 2)
+				o1 = opsWithDelta[0 - minDelta][uniform!uint(rng) % $];
+			else
+				o1 = cast(Op)(1 + uniform!uint(rng) % (enumLength!Op - 1));
+
 			OpShape s1 = opShapes[o1];
 			if (s1.input != s1.output)
 			{
 				// Balance it out
 
-				if (order.length < 2)
-					goto retryOp;
-
-				static immutable Op[][3] opsWithDelta =
-					iota(-1, 2)
-					.map!(delta =>
-						[EnumMembers!Op]
-						.filter!(op => opShapes[op].delta == delta)
-						.array
-					)
-					.array;
+				assert(order.length >= 2);
 
 				Op o2 = opsWithDelta[1 - s1.delta][uniform!uint(rng) % $];
 				OpShape s2 = opShapes[o2];
