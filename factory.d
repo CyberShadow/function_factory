@@ -211,8 +211,10 @@ struct Program(alias params_)
 	{
 	retryProgram:
 		Program program;
-		program.numOps = uniform!"[]"(1, params.maxInstructions, rng);
-		auto order = program.numOps.iota.array;
+		program.numOps = 1 + uniform!size_t(rng) % params.maxInstructions;
+		size_t[params.maxInstructions] orderBuf;
+		auto order = orderBuf[0 .. program.numOps];
+		copy(program.numOps.iota, order);
 
 		void addOp(size_t pos, Op op)
 		{
@@ -240,14 +242,19 @@ struct Program(alias params_)
 		// Start with 1 push instruction
 		static immutable Op[] pushers = [EnumMembers!Op].filter!(op => opShapes[op] == OpShape(0, 1)).array;
 		static assert(pushers.length > 0, "No push instructions (no constants/args/vars/locals)?");
-		addOp(order.pluck, pushers[uniform(0, $, rng)]);
+		{
+			auto p = uniform!size_t(rng) % order.length;
+			auto o = order[p];
+			order = order.remove!(SwapStrategy.unstable)(p);
+			addOp(o, pushers[uniform!size_t(rng) % $]);
+		}
 
 		while (order.length)
 		{
 			// Check sanity
 			assert(stackOK, "Bad stack generated");
 
-			auto o1 = cast(Op)uniform(1, enumLength!Op, rng);
+			auto o1 = cast(Op)(1 + uniform!size_t(rng) % (enumLength!Op - 1));
 			OpShape s1 = opShapes[o1];
 			if (s1.arg != s1.output)
 			{
@@ -265,7 +272,7 @@ struct Program(alias params_)
 					)
 					.array;
 
-				Op o2 = opsWithDelta[1 - s1.delta][uniform(0, $, rng)];
+				Op o2 = opsWithDelta[1 - s1.delta][uniform!size_t(rng) % $];
 				OpShape s2 = opShapes[o2];
 				if (s1.delta < 0)
 				{
@@ -273,8 +280,8 @@ struct Program(alias params_)
 					swap(s1, s2);
 				}
 
-				auto p1 = uniform(0, order.length    , rng);
-				auto p2 = uniform(0, order.length - 1, rng);
+				auto p1 = uniform!size_t(rng) %  order.length     ;
+				auto p2 = uniform!size_t(rng) % (order.length - 1);
 				if (p2 >= p1)
 					p2++;
 				addOp(order[p1], o1);
@@ -283,7 +290,8 @@ struct Program(alias params_)
 				{
 					if (p1 > p2)
 						swap(p1, p2);
-					order = order.remove(p1, p2);
+					order = order.remove!(SwapStrategy.unstable)(p2);
+					order = order.remove!(SwapStrategy.unstable)(p1);
 				}
 				else
 				{
@@ -294,7 +302,7 @@ struct Program(alias params_)
 			else
 			{
 				// Wherever
-				auto p1 = uniform(0, order.length, rng);
+				auto p1 = uniform!size_t(rng) % order.length;
 				addOp(order[p1], o1);
 				if (stackOK)
 					order = order.remove(p1);
@@ -315,12 +323,12 @@ struct Program(alias params_)
 
 		static if (constants.length)
 			foreach (i; 0 .. params.numVars)
-				program.initInstance.vars[i] = constants[uniform(0, $)];
+				program.initInstance.vars[i] = constants[uniform!size_t(rng) % $];
 
 		return program;
 	}
 
-	string toString() const
+	string toString() const @safe nothrow
 	{
 		enum char firstArg   = 'x';
 		enum char firstVar   = 'a';
@@ -418,7 +426,7 @@ struct Program(alias params_)
 	}
 }
 
-Program!params generateFunction(alias params, RNG)(bool delegate(ref Program!params) verifier, ref RNG rng)
+Program!params generateFunction(alias params, alias verifier, RNG)(ref RNG rng)
 {
 	alias P = Program!params;
 	while (true)
@@ -429,9 +437,10 @@ Program!params generateFunction(alias params, RNG)(bool delegate(ref Program!par
 	}
 }
 
-Program!params generateFunction(alias params)(bool delegate(ref Program!params) verifier) { return generateFunction!params(verifier, rndGen); }
+Program!params generateFunction(alias params, alias verifier)() { return generateFunction!(params, verifier)(rndGen); }
 
 ///
+pure @safe nothrow @nogc
 unittest
 {
 	struct Params
@@ -444,42 +453,43 @@ unittest
 	Xorshift rng;
 
 	// Return a constant
-	p = generateFunction!Params((ref p) =>
+	p = generateFunction!(Params, (ref p) =>
 		p.eval(1) == 1 &&
 		p.eval(2) == 1 &&
-		p.eval(4) == 1, rng);
+		p.eval(4) == 1)(rng);
 	assert(p.eval(42) == 1);
 
 	// Return arg (identity)
-	p = generateFunction!Params((ref p) =>
+	p = generateFunction!(Params, (ref p) =>
 		p.eval(1) == 1 &&
 		p.eval(2) == 2 &&
-		p.eval(4) == 4, rng);
+		p.eval(4) == 4)(rng);
 	assert(p.eval(42) == 42);
 
 	// Guess offset
-	p = generateFunction!Params((ref p) =>
+	p = generateFunction!(Params, (ref p) =>
 		p.eval(1) == 2 &&
 		p.eval(2) == 3 &&
-		p.eval(4) == 5, rng);
+		p.eval(4) == 5)(rng);
 	assert(p.eval(42) == 43);
 
 	// Guess multiplication factor
-	p = generateFunction!Params((ref p) =>
+	p = generateFunction!(Params, (ref p) =>
 		p.eval(1) == 2 &&
 		p.eval(2) == 4 &&
-		p.eval(4) == 8, rng);
+		p.eval(4) == 8)(rng);
 	assert(p.eval(42) == 84);
 
 	// Guess modulus
-	p = generateFunction!Params((ref p) =>
+	p = generateFunction!(Params, (ref p) =>
 		p.eval( 4) == 0 &&
 		p.eval( 7) == 1 &&
-		p.eval(18) == 0, rng);
+		p.eval(18) == 0)(rng);
 	assert(p.eval(41) == 1);
 }
 
 ///
+pure @safe nothrow @nogc
 unittest
 {
 	struct Params
@@ -495,22 +505,22 @@ unittest
 	Xorshift rng;
 
 	// Series - incrementing value
-	p = generateFunction!Params((ref p) {
+	p = generateFunction!(Params, (ref p) {
 			auto i = p.Instance(0);
 			return
 				p.eval(i) == 1 &&
 				p.eval(i) == 2 &&
 				p.eval(i) == 3;
-		}, rng);
+		})(rng);
 	i = p.Instance(42); assert(p.eval(i) == 43);
 
 	// Series - exponential
-	p = generateFunction!Params((ref p) {
+	p = generateFunction!(Params, (ref p) {
 			auto i = p.Instance(1);
 			return
 				p.eval(i) == 2 &&
 				p.eval(i) == 4 &&
 				p.eval(i) == 8;
-		}, rng);
+		})(rng);
 	i = p.Instance(64); assert(p.eval(i) == 128);
 }

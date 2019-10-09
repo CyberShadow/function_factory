@@ -17,7 +17,7 @@ void main()
 		static DefaultProgramParams defaults; alias defaults this;
 		enum maxInstructions = 6;
 	}
-	auto p = generateFunction!Params((ref p) =>
+	auto p = generateFunction!(Params, (ref p) =>
 		p.eval(0) == 0 &&
 		p.eval(1) == 0.5 &&
 		iota(10).all!(k =>

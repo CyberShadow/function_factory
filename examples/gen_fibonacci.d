@@ -19,7 +19,7 @@ void main()
 		enum numVars = 2;
 		enum maxInstructions = 7;
 	}
-	auto p = generateFunction!Params((ref p) {
+	auto p = generateFunction!(Params, (ref p) {
 		auto i = p.initInstance;
 		return
 			p.eval(i) == 0 &&
