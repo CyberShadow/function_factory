@@ -132,6 +132,13 @@ struct Program(alias params_)
 			return stack[--stackPointer];
 		}
 
+		void binary(string op)()
+		{
+			auto left  = pop();
+			auto right = pop();
+			push(mixin("left " ~ op ~ " right"));
+		}
+
 		foreach (op; ops[0 .. numOps])
 		{
 		opSwitch:
@@ -139,12 +146,12 @@ struct Program(alias params_)
 			{
 				case Op.hcf: assert(false, "On fire");
 				case Op.neg: push(-pop()); break;
-				case Op.add: push(pop() + pop()); break;
-				case Op.sub: push(pop() - pop()); break;
-				case Op.mul: push(pop() * pop()); break;
-				case Op.div: push(pop() / pop()); break;
-				case Op.mod: push(pop() % pop()); break;
-				case Op.pow: push(pop() ^^ pop()); break;
+				case Op.add: binary!"+"(); break;
+				case Op.sub: binary!"-"(); break;
+				case Op.mul: binary!"*"(); break;
+				case Op.div: binary!"/"(); break;
+				case Op.mod: binary!"%"(); break;
+				case Op.pow: binary!"^^"(); break;
 
 				static foreach (i; 0 .. constants.length)
 				{
@@ -328,6 +335,13 @@ struct Program(alias params_)
 			return stack[--stackPointer];
 		}
 
+		void binary(string op)
+		{
+			auto left  = pop();
+			auto right = pop();
+			push("(" ~ left ~ " " ~ op ~ " " ~ right ~ ")");
+		}
+
 		string s = T.stringof ~ " f(" ~ chain(
 			params.numArgs.iota.map!(i =>          T.stringof ~ " " ~ name(firstArg, i)),
 			params.numVars.iota.map!(i => "ref " ~ T.stringof ~ " " ~ name(firstVar, i)),
@@ -343,12 +357,12 @@ struct Program(alias params_)
 			{
 				case Op.hcf: s ~= "\tassert(false);\n"; break;
 				case Op.neg: push("(- " ~ pop()~ ")"); break;
-				case Op.add: push("(" ~ pop() ~ " + " ~ pop() ~ ")"); break;
-				case Op.sub: push("(" ~ pop() ~ " - " ~ pop() ~ ")"); break;
-				case Op.mul: push("(" ~ pop() ~ " * " ~ pop() ~ ")"); break;
-				case Op.div: push("(" ~ pop() ~ " / " ~ pop() ~ ")"); break;
-				case Op.mod: push("(" ~ pop() ~ " % " ~ pop() ~ ")"); break;
-				case Op.pow: push("(" ~ pop() ~ " ^^ " ~ pop() ~ ")"); break;
+				case Op.add: binary("+"); break;
+				case Op.sub: binary("-"); break;
+				case Op.mul: binary("*"); break;
+				case Op.div: binary("/"); break;
+				case Op.mod: binary("%"); break;
+				case Op.pow: binary("^^"); break;
 
 				static foreach (i; 0 .. constants.length)
 				{
