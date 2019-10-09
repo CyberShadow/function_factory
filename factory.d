@@ -112,6 +112,7 @@ struct Program(alias params_)
 	{
 		T[params.numVars] vars;
 	}
+	Instance initInstance;
 
 	enum maxStack = params.maxInstructions;
 
@@ -309,6 +310,10 @@ struct Program(alias params_)
 			if (++tries >= maxTries)
 				goto retryProgram;
 		}
+
+		static if (constants.length)
+			foreach (i; 0 .. params.numVars)
+				program.initInstance.vars[i] = constants[uniform(0, $)];
 
 		return program;
 	}
