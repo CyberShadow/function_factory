@@ -4,6 +4,7 @@ import std.algorithm.comparison;
 import std.algorithm.iteration;
 import std.algorithm.mutation;
 import std.array;
+import std.math;
 import std.random;
 import std.range;
 import std.traits;
@@ -20,7 +21,7 @@ struct DefaultProgramParams
 	enum numArgs   = 1; /// number of values specified for each function call
 	enum numVars   = 0; /// number of variables preserved across calls
 	enum numLocals = 0; /// number of variables scoped to a single call
-	enum T[] constants = [0, 1, 2]; /// literals which may appear in the program
+	enum T[] constants = [0, 1, 2, PI]; /// literals which may appear in the program
 }
 
 struct Program(alias params_)
@@ -35,6 +36,10 @@ struct Program(alias params_)
 
 			// Unary (stack 1 => 1)
 			neg,
+
+			sin,
+			cos,
+			tan,
 
 			// Binary (stack 2 => 1)
 			add,
@@ -74,6 +79,9 @@ struct Program(alias params_)
 		final switch (op)
 		{
 			case Op.hcf: return OpShape(0, 0);
+			case Op.sin:
+			case Op.cos:
+			case Op.tan:
 			case Op.neg: return OpShape(1, 1);
 			case Op.add:
 			case Op.sub:
@@ -154,6 +162,9 @@ struct Program(alias params_)
 			{
 				case Op.hcf: assert(false, "On fire");
 				case Op.neg: push(-pop()); break;
+				case Op.sin: push(sin(pop())); break;
+				case Op.cos: push(cos(pop())); break;
+				case Op.tan: push(tan(pop())); break;
 				case Op.add: binary!"+"(); break;
 				case Op.sub: binary!"-"(); break;
 				case Op.mul: binary!"*"(); break;
@@ -358,13 +369,19 @@ struct Program(alias params_)
 				case Op.div: binary("/"); break;
 				case Op.mod: binary("%"); break;
 				case Op.pow: binary("^^"); break;
+				case Op.sin: push("sin(" ~ pop() ~ ")"); break;
+				case Op.cos: push("cos(" ~ pop() ~ ")"); break;
+				case Op.tan: push("tan(" ~ pop() ~ ")"); break;
 				case Op.min: push("min(" ~ pop() ~ ", " ~ pop() ~ ")"); break;
 				case Op.max_:push("max(" ~ pop() ~ ", " ~ pop() ~ ")"); break;
 
 				static foreach (i; 0 .. constants.length)
 				{
 					mixin("case Op.pushConstant" ~ toDec(i) ~ ":");
-					push(constants[i].fpToString);
+					if (constants[i] == params.T(PI))
+						push("PI");
+					else
+						push(constants[i].fpToString);
 					break opSwitch;
 				}
 				static foreach (i; 0 .. params.numArgs)
