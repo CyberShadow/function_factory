@@ -40,6 +40,15 @@ struct Program(alias params_)
 			sin,
 			cos,
 			tan,
+			asin,
+			acos,
+			atan,
+			sinh,
+			cosh,
+			tanh,
+			asinh,
+			acosh,
+			atanh,
 
 			// Binary (stack 2 => 1)
 			add,
@@ -82,6 +91,15 @@ struct Program(alias params_)
 			case Op.sin:
 			case Op.cos:
 			case Op.tan:
+			case Op.asin:
+			case Op.acos:
+			case Op.atan:
+			case Op.sinh:
+			case Op.cosh:
+			case Op.tanh:
+			case Op.asinh:
+			case Op.acosh:
+			case Op.atanh:
 			case Op.neg: return OpShape(1, 1);
 			case Op.add:
 			case Op.sub:
@@ -165,6 +183,15 @@ struct Program(alias params_)
 				case Op.sin: push(sin(pop())); break;
 				case Op.cos: push(cos(pop())); break;
 				case Op.tan: push(tan(pop())); break;
+				case Op.asin: push(asin(pop())); break;
+				case Op.acos: push(acos(pop())); break;
+				case Op.atan: push(atan(pop())); break;
+				case Op.sinh: push(sinh(pop())); break;
+				case Op.cosh: push(cosh(pop())); break;
+				case Op.tanh: push(tanh(pop())); break;
+				case Op.asinh: push(asinh(pop())); break;
+				case Op.acosh: push(acosh(pop())); break;
+				case Op.atanh: push(atanh(pop())); break;
 				case Op.add: binary!"+"(); break;
 				case Op.sub: binary!"-"(); break;
 				case Op.mul: binary!"*"(); break;
@@ -372,6 +399,15 @@ struct Program(alias params_)
 				case Op.sin: push("sin(" ~ pop() ~ ")"); break;
 				case Op.cos: push("cos(" ~ pop() ~ ")"); break;
 				case Op.tan: push("tan(" ~ pop() ~ ")"); break;
+				case Op.asin: push("asin(" ~ pop() ~ ")"); break;
+				case Op.acos: push("acos(" ~ pop() ~ ")"); break;
+				case Op.atan: push("atan(" ~ pop() ~ ")"); break;
+				case Op.sinh: push("sinh(" ~ pop() ~ ")"); break;
+				case Op.cosh: push("cosh(" ~ pop() ~ ")"); break;
+				case Op.tanh: push("tanh(" ~ pop() ~ ")"); break;
+				case Op.asinh: push("asinh(" ~ pop() ~ ")"); break;
+				case Op.acosh: push("acosh(" ~ pop() ~ ")"); break;
+				case Op.atanh: push("atanh(" ~ pop() ~ ")"); break;
 				case Op.min: push("min(" ~ pop() ~ ", " ~ pop() ~ ")"); break;
 				case Op.max_:push("max(" ~ pop() ~ ", " ~ pop() ~ ")"); break;
 
