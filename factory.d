@@ -44,6 +44,7 @@ struct Program(alias params_)
 
 			// Unary (stack 1 => 1)
 			neg,
+			abs,
 
 			sin,
 			cos,
@@ -108,7 +109,8 @@ struct Program(alias params_)
 			case Op.asinh:
 			case Op.acosh:
 			case Op.atanh:
-			case Op.neg: return OpShape(1, 1);
+			case Op.neg:
+			case Op.abs: return OpShape(1, 1);
 			case Op.add:
 			case Op.sub:
 			case Op.mul:
@@ -190,6 +192,7 @@ struct Program(alias params_)
 			{
 				case Op.hcf: assert(false, "On fire");
 				case Op.neg: push(-pop()); break;
+				case Op.abs: push(abs(pop())); break;
 				case Op.sin: push(sin(pop())); break;
 				case Op.cos: push(cos(pop())); break;
 				case Op.tan: push(tan(pop())); break;
@@ -400,6 +403,7 @@ struct Program(alias params_)
 			{
 				case Op.hcf: s ~= "\tassert(false);\n"; break;
 				case Op.neg: push("(- " ~ pop()~ ")"); break;
+				case Op.abs: push("abs(" ~ pop()~ ")"); break;
 				case Op.add: binary("+"); break;
 				case Op.sub: binary("-"); break;
 				case Op.mul: binary("*"); break;
@@ -607,4 +611,19 @@ Program!params generateFunctionMT(alias params, alias verifier)()
 unittest
 {
 	generateFunctionMT!(DefaultProgramParams, (ref p) => p.eval(1) == 2);
+}
+
+version(unittest) {} else
+version(main_factory)
+void main()
+{
+	struct Params
+	{
+		static DefaultProgramParams defaults; alias defaults this;
+		enum numArgs = 0;
+		enum numVars = 1;
+		enum maxInstructions = 20;
+	}
+	import std.stdio;
+	generateFunction!(Params, (ref p) => true).writeln;
 }
