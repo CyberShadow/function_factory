@@ -22,6 +22,14 @@ struct DefaultProgramParams
 	enum numVars   = 0; /// number of variables preserved across calls
 	enum numLocals = 0; /// number of variables scoped to a single call
 	enum T[] constants = [0, 1, 2, PI]; /// literals which may appear in the program
+	static bool isOpAllowed(Op)(Op op) /// which operators are allowed
+	{
+		return !op.among(
+			Op.hcf,
+			Op.sin , Op.cos , Op.tan , Op.asin , Op.acos , Op.atan ,
+			Op.sinh, Op.cosh, Op.tanh, Op.asinh, Op.acosh, Op.atanh,
+		);
+	}
 }
 
 struct Program(alias params_)
@@ -137,6 +145,8 @@ struct Program(alias params_)
 			result[op] = opShape(op);
 		return result;
 	}();
+
+	static immutable allowedOps = [EnumMembers!Op].filter!(params.isOpAllowed).array;
 
 	Op[params.maxInstructions] ops;
 	size_t numOps;
@@ -283,7 +293,7 @@ struct Program(alias params_)
 		}
 
 		// Start with 1 push instruction
-		static immutable Op[] pushers = [EnumMembers!Op].filter!(op => opShapes[op] == OpShape(0, 1)).array;
+		static immutable Op[] pushers = allowedOps.filter!(op => opShapes[op] == OpShape(0, 1)).array;
 		static assert(pushers.length > 0, "No push instructions (no constants/args/vars/locals)?");
 		addOp(0, pushers[uniform!uint(rng) % $]);
 
@@ -292,12 +302,12 @@ struct Program(alias params_)
 			// Check sanity
 			assert(stackOK, "Bad stack generated");
 
-			enum minDelta = [EnumMembers!Op].map!(op => opShapes[op].delta).reduce!min;
-			enum maxDelta = [EnumMembers!Op].map!(op => opShapes[op].delta).reduce!max;
+			enum minDelta = allowedOps.map!(op => opShapes[op].delta).reduce!min;
+			enum maxDelta = allowedOps.map!(op => opShapes[op].delta).reduce!max;
 			static immutable Op[][maxDelta - minDelta + 1] opsWithDelta =
 				iota(minDelta, maxDelta + 1)
 				.map!(delta =>
-					[EnumMembers!Op]
+					allowedOps
 					.filter!(op => op != Op.init && opShapes[op].delta == delta)
 					.array
 				)
@@ -307,7 +317,7 @@ struct Program(alias params_)
 			if (order.length < 2)
 				o1 = opsWithDelta[0 - minDelta][uniform!uint(rng) % $];
 			else
-				o1 = cast(Op)(1 + uniform!uint(rng) % (enumLength!Op - 1));
+				o1 = allowedOps[uniform!uint(rng) % $];
 
 			OpShape s1 = opShapes[o1];
 			if (s1.input != s1.output)
