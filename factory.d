@@ -216,12 +216,13 @@ struct Program(alias params_)
 
 	static Program generate(RNG)(ref RNG rng)
 	{
-	retryProgram:
 		Program program;
 		program.numOps = 1 + uniform!uint(rng) % params.maxInstructions;
 		size_t[params.maxInstructions] orderBuf;
 		auto order = orderBuf[0 .. program.numOps];
 		copy(program.numOps.iota, order);
+		order.shift();
+		order.randomShuffle(rng);
 
 		void addOp(size_t pos, Op op)
 		{
@@ -243,18 +244,10 @@ struct Program(alias params_)
 			return depth == 1;
 		}
 
-		uint tries;
-		enum maxTries = params.maxInstructions * 10;
-
 		// Start with 1 push instruction
 		static immutable Op[] pushers = [EnumMembers!Op].filter!(op => opShapes[op] == OpShape(0, 1)).array;
 		static assert(pushers.length > 0, "No push instructions (no constants/args/vars/locals)?");
-		{
-			auto p = uniform!uint(rng) % order.length;
-			auto o = order[p];
-			order = order.remove!(SwapStrategy.unstable)(p);
-			addOp(o, pushers[uniform!uint(rng) % $]);
-		}
+		addOp(0, pushers[uniform!uint(rng) % $]);
 
 		while (order.length)
 		{
@@ -293,47 +286,19 @@ struct Program(alias params_)
 					swap(s1, s2);
 				}
 
-				auto p1 = uniform!uint(rng) %  order.length     ;
-				auto p2 = uniform!uint(rng) % (order.length - 1);
-				if (p2 >= p1)
-					p2++;
-				addOp(order[p1], o1);
-				addOp(order[p2], o2);
-				if (stackOK)
-				{
-					if (p1 > p2)
-						swap(p1, p2);
-					order = order.remove!(SwapStrategy.unstable)(p2);
-					order = order.remove!(SwapStrategy.unstable)(p1);
-				}
-				else
-				{
-					program.ops[order[p1]] = program.ops[order[p2]] = Op.init;
-					goto retryOp;
-				}
+				auto p1 = order.shift();
+				auto p2 = order.shift();
+				if (p1 > p2)
+					swap(p1, p2);
+				addOp(p1, o1);
+				addOp(p2, o2);
 			}
 			else
 			{
 				// Wherever
-				auto p1 = uniform!uint(rng) % order.length;
-				addOp(order[p1], o1);
-				if (stackOK)
-					order = order.remove(p1);
-				else
-				{
-					if (order.length == 1)
-						goto retryProgram; // it is impossible to finish this program
-					program.ops[order[p1]] = Op.init;
-					goto retryOp;
-				}
+				auto p1 = order.shift();
+				addOp(p1, o1);
 			}
-
-			tries = 0; // success
-			continue;
-
-		retryOp:
-			if (++tries >= maxTries)
-				goto retryProgram;
 		}
 
 		static if (constants.length)
